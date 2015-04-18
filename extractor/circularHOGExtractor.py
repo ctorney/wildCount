@@ -1,10 +1,8 @@
-from SimpleCV.base import *
-from SimpleCV.ImageClass import Image
-from SimpleCV.Features.FeatureExtractorBase import *
 import cmath as cm
+import numpy as np
 
 
-class circularHOGExtractor(FeatureExtractorBase):
+class circularHOGExtractor():
     """
     Create a 1D edge length histogram and 1D edge angle histogram.
     
@@ -35,7 +33,7 @@ class circularHOGExtractor(FeatureExtractorBase):
         kernel[kernel < 0] = 0
         kernel = kernel/sum(sum(kernel))
 
-        self.ciKernel.append(kernel)
+ #       self.ciKernel.append(kernel)
 
         # next build the internal regions - (bins-1) concentric circles
         modes = range(0, self.mNMaxFreq+1)
@@ -90,18 +88,19 @@ class circularHOGExtractor(FeatureExtractorBase):
 
         # compute regional descriptors by convolutions (these descriptors are not rotation invariant)
         fHOG = np.zeros([self.mNCount])
+        fHOG2 = np.zeros([3*self.mNCount])
         f_index = 0
         template = self.ciKernel[0]
         (tnx, tny) = template.shape
         tnx2 = int(round(0.5*tnx))
         featureDetail = []
         for k in range(0,self.mNMaxFreq+1):
-            fHOG[f_index] = abs(np.sum(np.sum(np.multiply(histF[cx-tnx2:cx-tnx2+tnx,cy-tnx2:cy-tnx2+tnx,k],template))))
+            fHOG[f_index] = 0.0#abs(np.sum(np.sum(np.multiply(histF[cx-tnx2:cx-tnx2+tnx,cy-tnx2:cy-tnx2+tnx,k],template))))
             f_index+=1
         #   featureDetail.append([0,-1,-k, 0, -k])
 
 
-        scale = range(2, self.mNBins+1)
+        scale = range(0, self.mNBins-1)
         #for s in scale:
          #   featureDim = 0;
           #  for freq in range(-self.mNMaxFreq,self.mNMaxFreq+1):
@@ -116,7 +115,8 @@ class circularHOGExtractor(FeatureExtractorBase):
         # this is a rotation invariant feature, if not we only keep the magnitude
         for s in scale:
             for freq in range(0,self.mNMaxFreq+1):
-                k_index = 1 + (s-2)*(self.mNMaxFreq+1)+abs(freq)
+                k_index = 0 + (s-0)*(self.mNMaxFreq+1)+abs(freq)
+#print k_index
                 template = self.ciKernel[k_index]
                 (tnx, tny) = template.shape
                 tnx2 = int(round(0.5*tnx))
@@ -136,6 +136,36 @@ class circularHOGExtractor(FeatureExtractorBase):
                         f_index+=1
 
 
+        tebhw = 0
+        f_index = 0
+        for s in scale:
+            allVals = np.zeros((self.mNMaxFreq+1,self.mNMaxFreq+1),dtype=np.complex64)
+            for freq in range(0,self.mNMaxFreq+1):
+                template = self.ciKernel[s*(self.mNMaxFreq+1)+freq]
+                (tnx, tny) = template.shape
+                tnx2 = int(round(0.5*tnx))
+                for k in range(0,self.mNMaxFreq+1):
+                    allVals[freq,k] = np.sum(np.sum(np.multiply(histF[cx-tnx2:cx-tnx2+tnx,cy-tnx2:cy-tnx2+tnx,k],template)))
+            for (x,y), val in np.ndenumerate(allVals):
+                if x==y:
+                    fHOG2[f_index]=val.real
+                    f_index+=1
+                    fHOG2[f_index]=val.imag
+                    f_index+=1
+                    tebhw+=1
+                else:
+                    for (x1,y1), val1 in np.ndenumerate(allVals):
+                        if x1<x: continue
+                        if y1<y: continue
+                        if (x-y)==(x1-y1):
+                            fHOG2[f_index]=(val*val1.conjugate()).real
+                            f_index+=1
+                            fHOG2[f_index]=(val*val1.conjugate()).imag
+                            f_index+=1
+                            tebhw+=1
+        print tebhw, f_index
+
+        return fHOG2.tolist()
         return fHOG.tolist()
 
 
