@@ -9,11 +9,11 @@ import scipy.ndimage.filters as filters
 import time
 sys.path.append('../extractor/')
 
-from cudaHOGExtractor import cudaHOGExtractor
+from circularHOGExtractor import circularHOGExtractor
 import time
 
 
-ch = cudaHOGExtractor(8,2,4) 
+ch = circularHOGExtractor(4,4,3) 
 
 
 photo_dir = '/home/ctorney/data/wildebeest_survey/'
@@ -79,16 +79,17 @@ for imgName in os.listdir(photo_dir):
     chunkSize = 8192#65536#4096
     splitPos = np.array_split(positions,np.arange(chunkSize,plen,chunkSize))
     
-    ch.prepareExtract(frame)    
+    histF = ch.prepareExtract(frame)    
     output2 = np.zeros_like(frame)
     nsplits = np.size(splitPos,0)
+    
     for k in range(nsplits):
         thisPos = np.copy(splitPos[k],order='c')
         sys.stdout.write('\r')
         sys.stdout.write("[%-20s] %d%%" % ('='*int(20*k/float(nsplits)), int(100.0*k/float(nsplits))))
         sys.stdout.flush()
         N = np.size(thisPos,0)
-        features = ch.denseExtract(frame, thisPos, N)    
+        features = ch.denseExtract(histF, thisPos, N)    
         res = fhgb.predict(features)
 #       output2[thisPos[res>0.5]]=255.0
         output2[thisPos[res>0.5,0],thisPos[res>0.5,1]]=255.0
