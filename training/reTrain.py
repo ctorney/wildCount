@@ -1,6 +1,5 @@
 
 import cv2
-import cv
 import numpy as np
 import os, random, sys
 import pickle
@@ -60,24 +59,24 @@ def isnt_wildebeest(event,x,y,flags,param):
 
 
 
-photo_dir = '/home/ctorney/data/wildebeest_survey/'
+photo_dir = '/home/ctorney/data/wildebeest_survey/2012/'
 counted_dir = '../countedImages/'
 
 
 box_dim = 32
 
 
-params = cv2.SimpleBlobDetector_Params()
-params.minDistBetweenBlobs = 20.0;
-params.filterByInertia = False;
-params.filterByConvexity = False;
-params.filterByColor = False;
-params.filterByCircularity = False;
-params.filterByArea = True;
-params.minArea = 25.0;
-params.maxArea = 50.0;
-params.blobColor = 0.0
-b = cv2.SimpleBlobDetector(params)
+#params = cv2.SimpleBlobDetector_Params()
+#params.minDistBetweenBlobs = 20.0;
+#params.filterByInertia = False;
+#params.filterByConvexity = False;
+#params.filterByColor = False;
+#params.filterByCircularity = False;
+#params.filterByArea = True;
+#params.minArea = 25.0;
+#params.maxArea = 50.0;
+#params.blobColor = 0.0
+#b = cv2.SimpleBlobDetector(params)
 
 
 counter = 0

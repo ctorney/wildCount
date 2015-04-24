@@ -86,59 +86,10 @@ class cudaHOGExtractor():
         for k in range(0,self.mNMaxFreq+1):
             histF[:,:,k] = np.multiply(np.exp( -1j * (k) * phi) , r+0j)
         
-# this makes no sense to me        histF[:,:,0] = histF[:,:,0] * 0.5
 
         # compute regional descriptors by convolutions (these descriptors are not rotation invariant)
         fHOG = np.zeros([self.mNCount])
-        fHOG2 = np.zeros([self.mNCount])
-        f_index = 0
-        template = self.ciKernel[0]
-        (tnx, tny) = template.shape
-        tnx2 = int(round(0.5*tnx))
-        featureDetail = []
-        for k in range(0,self.mNMaxFreq+1):
-            fHOG[f_index] = 0.0#abs(np.sum(np.sum(np.multiply(histF[cx-tnx2:cx-tnx2+tnx,cy-tnx2:cy-tnx2+tnx,k],template))))
-            f_index+=1
-        #   featureDetail.append([0,-1,-k, 0, -k])
-
-
         scale = range(0, self.mNBins-1)
-        #for s in scale:
-         #   featureDim = 0;
-          #  for freq in range(-self.mNMaxFreq,self.mNMaxFreq+1):
-           #     for k in range(0,self.mNMaxFreq+1):
-            #        ff = freq - k
-             #       if(ff >= -self.mNMaxFreq and ff <= self.mNMaxFreq and not(k==0 and freq < 0)):
-              #          featureDim = featureDim + 1;
-               #         featureDetail.append([s,-1,-k, freq, ff])
-
-        # no descriptors should be conjugate as this gives no extra information, 
-        # i.e. we want to keep (UmFk OR U-mF-k) and (U-mFk OR UmF-k). If m=k then 
-        # this is a rotation invariant feature, if not we only keep the magnitude
-#        for s in scale:
-#            for freq in range(0,self.mNMaxFreq+1):
-#                k_index = 0 + (s-0)*(self.mNMaxFreq+1)+abs(freq)
-#print k_index
-#                template = self.ciKernel[k_index]
-#                (tnx, tny) = template.shape
-#                tnx2 = int(round(0.5*tnx))
-#                for k in range(0,self.mNMaxFreq+1):
-#                    if (k==freq):
-#                        fHOG[f_index] = np.real(np.sum(np.sum(np.multiply(histF[cx-tnx2:cx-tnx2+tnx,cy-tnx2:cy-tnx2+tnx,k],template))))
-#                        f_index+=1
-#                        fHOG[f_index] = np.imag(np.sum(np.sum(np.multiply(histF[cx-tnx2:cx-tnx2+tnx,cy-tnx2:cy-tnx2+tnx,k],template))))
-#                        f_index+=1
-#                    else:
-#                        fHOG[f_index] = abs(np.sum(np.sum(np.multiply(histF[cx-tnx2:cx-tnx2+tnx,cy-tnx2:cy-tnx2+tnx,k],template))))
-#                        f_index+=1#
-
-#                    if(k > 0):
-#                        template = np.conjugate(template)
-#                        fHOG[f_index] = abs(np.sum(np.sum(np.multiply(histF[cx-tnx2:cx-tnx2+tnx,cy-tnx2:cy-tnx2+tnx,k],template))))
-#                        f_index+=1
-
-
-        tebhw = 0
         f_index = 0
         for s in scale:
             allVals = np.zeros((self.mNMaxFreq+1,self.mNMaxFreq+1),dtype=np.complex64)
@@ -150,29 +101,27 @@ class cudaHOGExtractor():
                     allVals[freq,k] = np.sum(np.sum(np.multiply(histF[cx-tnx2:cx-tnx2+tnx,cy-tnx2:cy-tnx2+tnx,k],template)))
             for (x,y), val in np.ndenumerate(allVals):
                 if x==y:
-                    fHOG2[f_index]=val.real
+                    fHOG[f_index]=val.real
                     f_index+=1
-                    fHOG2[f_index]=val.imag
+                    fHOG[f_index]=val.imag
                     f_index+=1
-                    tebhw+=1
                 else:
                     for (x1,y1), val1 in np.ndenumerate(allVals):
                         if x1<x: continue
                         if y1<y: continue
                         if (x-y)==(x1-y1):
-                            fHOG2[f_index]=(val*val1.conjugate()).real
+                            fHOG[f_index]=(val*val1.conjugate()).real
                             f_index+=1
-                            fHOG2[f_index]=(val*val1.conjugate()).imag
+                            fHOG[f_index]=(val*val1.conjugate()).imag
                             f_index+=1
-                            tebhw+=1
-#        print tebhw, f_index
 
-        return fHOG2.tolist()
+        return fHOG.tolist()
+
+
 
     def prepareExtract(self, img):
 
         I = img.astype(float)/255.0
-#      I = (I-I.mean())/I.std()
 
         # size and centre of image
         (nx, ny) = I.shape        
@@ -180,7 +129,6 @@ class cudaHOGExtractor():
 
         bx = nx//maxThreads
         by = ny//maxThreads
-        #features = np.zeros((nx,ny,self.mNCount),dtype=np.float32)
 
         
         cx = int(round(0.5*nx))
@@ -191,12 +139,10 @@ class cudaHOGExtractor():
         dz = dx + 1j*dy
         dz = dz.astype(np.complex64)
         dz_gpu = gpuarray.to_gpu(dz)
-#       a = np.random.randn(4,4) + 1j*np.random.randn(4,4)
 
         # compute magnitude/phase of complex numbers
         phi = np.angle(dz)
         r = np.abs(dz)
- #       r = r/(r.mean()+0.001)
 	
 
         histF =np.zeros((self.mNMaxFreq + 1, nx, ny),dtype=np.complex64)
@@ -207,32 +153,8 @@ class cudaHOGExtractor():
         func(dz_gpu, self.gpu_histF, np.int32(self.mNMaxFreq+1), np.int32(nx), np.int32(ny), block = (maxThreads, maxThreads, 1), grid = (bx, by, 1))
 
 
-        # create an empty array for storing the dfft of the orientation vector
-        histF = np.zeros([self.mNMaxFreq+1,nx, ny ])+0j
-
-        # take the dfft of the orientation vector up to order MaxFreq
-        # positive values of k only since negative values give conjugate
-        for k in range(0,self.mNMaxFreq+1):
-            histF[k,:,:] = np.multiply(np.exp( -1j * (k) * phi) , r+0j)
-
-        allVals = self.gpu_histF.get()
-        print np.max(abs(allVals-histF))
-#       hf_out = np.empty_like(histF)
-#       hf_out = gpu_histF.get()#np.empty_like(a)
-
-
-        # create an empty array for storing the dfft of the orientation vector
-
-        # take the dfft of the orientation vector up to order MaxFreq
-        # positive values of k only since negative values give conjugate
-#       for k in range(0,self.mNMaxFreq+1):
-#            histF[k,:,:] = np.multiply(np.exp( -1j * (k) * phi) , r+0j)
-
-#       return features
-        
     def denseExtract(self, img, positions, N):
         I = img.astype(float)/255.0
-#      I = (I-I.mean())/I.std()
 
         # size and centre of image
         (nx, ny) = I.shape        
@@ -241,10 +163,9 @@ class cudaHOGExtractor():
         if N>(maxThreads*bx):
             print 'ERROR: exceeds maximum size of cuda array'
             return
-
         gpu_positions = gpuarray.to_gpu(positions.astype(np.int32))
         features = np.zeros((N,self.mNCount),dtype=np.float32)
-        func2 = self.mod.get_function("d_convolve2")
+        func2 = self.mod.get_function("d_convolve")
         func3 = self.mod.get_function("d_rotation_inv")
         # compute regional descriptors by convolutions (these descriptors are not rotation invariant)
         fHOG = np.zeros([self.mNCount])
@@ -262,21 +183,14 @@ class cudaHOGExtractor():
                 template = self.ciKernel[s*(self.mNMaxFreq+1)+freq].astype(np.complex64)
                 gpu_template = gpuarray.to_gpu(template)
                 (tnx, tny) = template.shape
-                print tnx
                 tnx2 = int(round(0.5*tnx))
-                func2(gpu_vals, self.gpu_histF, gpu_positions, gpu_template, np.int32(N), np.int32(self.mNMaxFreq+1), np.int32(tnx), np.int32(nx), np.int32(ny), np.int32(freq), np.int32(1), block = (maxThreads, 1, 1), grid = (bx, 1, 1))
-            allVals = gpu_vals.get()#np.empty_like(a)
-            func3(gpu_vals, gpu_features, np.int32(N), np.int32(self.mNMaxFreq+1), np.int32(s), block = (maxThreads, 1, 1), grid = (bx, 1, 1))
-            
-            break
-#      print 'done ' + str(f_index)  + ' of ' + str(self.mNCount)
+                func2(gpu_vals, self.gpu_histF, gpu_positions, gpu_template, np.int32(N), np.int32(self.mNMaxFreq+1), np.int32(tnx), np.int32(nx), np.int32(ny), np.int32(freq), block = (maxThreads, 1, 1), grid = (bx, 1, 1))
+            allVals = gpu_vals.get()
+            func3(gpu_vals, gpu_features, np.int32(N),np.int32(self.mNMaxFreq+1), np.int32(s),np.int32(self.mNCount), np.int32(self.mNBinCount),  block = (maxThreads, 1, 1), grid = (bx, 1, 1))
+        features = gpu_features.get()
+        
+        
         return features
-
-#        print "diff to original array:"
-#        print features[0], fHOG[0]
-#        print np.max(np.abs(features-fHOG))
-
-        return fHOG.tolist()
 
 
 

@@ -1,6 +1,5 @@
 
 import cv2
-import cv
 import numpy as np
 import os, random, sys
 import pickle
@@ -9,15 +8,15 @@ import scipy.ndimage.filters as filters
 import time
 sys.path.append('../extractor/')
 
-from circularHOGExtractor import circularHOGExtractor
+from cudaHOGExtractor import cudaHOGExtractor
 import time
 
 
-ch = circularHOGExtractor(4,4,3) 
+ch = cudaHOGExtractor(8,2,4) 
 
 
-photo_dir = '/home/ctorney/data/wildebeest_survey/'
-counted_dir = '../countedImages/'
+photo_dir = '/home/ctorney/data/wildebeest_survey/2009/1/'
+counted_dir = '../countedImages2009/'
 
 
 box_dim = 32
@@ -37,7 +36,7 @@ params.minArea = 20.0;
 params.maxArea = 50.0;
 params.blobColor = 0.0
 
-b = cv2.SimpleBlobDetector(params)
+b = cv2.SimpleBlobDetector_create(params)
 
 
 gnb = pickle.load( open( "../boosters/contrastBooster.p", "rb" ) )
@@ -79,7 +78,7 @@ for imgName in os.listdir(photo_dir):
     chunkSize = 8192#65536#4096
     splitPos = np.array_split(positions,np.arange(chunkSize,plen,chunkSize))
     
-    histF = ch.prepareExtract(frame)    
+    ch.prepareExtract(frame)    
     output2 = np.zeros_like(frame)
     nsplits = np.size(splitPos,0)
     
@@ -89,43 +88,10 @@ for imgName in os.listdir(photo_dir):
         sys.stdout.write("[%-20s] %d%%" % ('='*int(20*k/float(nsplits)), int(100.0*k/float(nsplits))))
         sys.stdout.flush()
         N = np.size(thisPos,0)
-        features = ch.denseExtract(histF, thisPos, N)    
+        features = ch.denseExtract(frame, thisPos, N)    
         res = fhgb.predict(features)
-#       output2[thisPos[res>0.5]]=255.0
         output2[thisPos[res>0.5,0],thisPos[res>0.5,1]]=255.0
-#       break
-#        for pxs in range(N):
-#           print pxs
-#            res = fhgb.predict(features[pxs])
-#            if res[0]>0.5:
-#                px = thisPos[pxs,0]
-#                py = thisPos[pxs,1]
-#                output2[px,py]  = 255.0
 
-#    break
-#   print thisPos[000,0], thisPos[000,1]
-#    px = thisPos[000,0]+1
-#    py = thisPos[000,1]+1
-    
-#   tmpImg = cleanframe[int(px)-box_dim/2:int(px)+box_dim/2, int(py)-box_dim/2:int(py)+box_dim/2]
-#    clsImg = cv2.cvtColor(tmpImg, cv2.COLOR_BGR2GRAY)
-#    features2 = ch.extract(clsImg)
-#    for i in range(np.size(features2,0)):
-#        print features[000,i], features2[i]
-        
-#    break
-#    for px in range(box_dim/2,Nx-box_dim/2):
-#        sys.stdout.write('\r')
-#        sys.stdout.write("[%-20s] %d%%" % ('='*int(20*px/float(Nx)), int(100.0*px/float(Nx))))
-#        sys.stdout.flush()
-#        for py in range(box_dim/2,Ny-box_dim/2):
-#
-#            if output[px, py]  == 255.0:#*res[0,0]
-#                tmpImg = cleanframe[int(px)-box_dim/2:int(px)+box_dim/2, int(py)-box_dim/2:int(py)+box_dim/2]
-#                clsImg = cv2.cvtColor(tmpImg, cv2.COLOR_BGR2GRAY)
-#                res = fhgb.predict(ch.extract(clsImg))
-#                if res[0]>0.5:
-#                    output2[px,py]  = 255.0
     sys.stdout.write('\r')
     sys.stdout.write("[%-20s] %d%%" % ('='*int(20), int(100)))
     sys.stdout.flush()
