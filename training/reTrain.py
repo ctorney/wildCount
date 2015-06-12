@@ -45,7 +45,7 @@ def scanSave(x,y,save_path):
 def is_wildebeest(event,x,y,flags,param):
     global counter
     if event == cv2.EVENT_LBUTTONDBLCLK:
-        save_path = "yes/img-" + offset + str(counter) + ".png"
+        save_path = "yes2/img-" + offset + str(counter) + ".png"
         scanSave(x,y,save_path)
         counter += 1
         
@@ -53,8 +53,9 @@ def is_wildebeest(event,x,y,flags,param):
 def isnt_wildebeest(event,x,y,flags,param):
     global counter
     if event == cv2.EVENT_LBUTTONDBLCLK:
-        save_path = "no_contrast/img-" + offset + str(counter) + ".png"
-        scanSave(x,y,save_path)
+        save_path = "no2/img-" + offset + str(counter) + ".png"
+        tmpImg = (cleanframe[y-box_dim/2:y+box_dim/2, x-box_dim/2:x+box_dim/2])
+        cv2.imwrite(save_path, tmpImg)
         counter += 1
 
 
@@ -83,6 +84,13 @@ counter = 0
 fhgb = pickle.load( open( "../boosters/fhgBooster.p", "rb" ) )
 
 endClass = False
+nos=True
+yeses=False
+cv2.destroyAllWindows()
+if nos:
+    noname = 'dbl click miss-identified wildebeest (ESC to quit, c to continue)'
+    cv2.namedWindow(noname, flags =  cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(noname, cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
 for imgName in os.listdir(photo_dir):
     
 
@@ -93,36 +101,34 @@ for imgName in os.listdir(photo_dir):
     if not os.path.isfile(counted_dir + 'c' + imgName):
         continue
     countframe = cv2.imread('../countedImages/c' + imgName)
-    cv2.destroyAllWindows()
-    yesname = imgName + ': dbl click wildebeest (ESC to quit, c to continue)'
-    cv2.namedWindow(yesname, flags =  cv2.WINDOW_NORMAL)
-#    cv2.setWindowProperty(yesname, cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
-    cv2.resizeWindow(yesname, 4*Nx,4*Ny);
-    cv2.setMouseCallback(yesname,is_wildebeest)
-    cv2.imshow(yesname,countframe)
-    while(1):
-        k = cv2.waitKey(0)
-        if k==27:    # Esc key to stop
-            endClass = True
-            break
-        elif k==ord('c'):
-            break
-    cv2.destroyAllWindows()
-    if endClass: break
-    noname = imgName + ': dbl click miss-identified wildebeest (ESC to quit, c to continue)'
-    cv2.namedWindow(noname, flags =  cv2.WINDOW_NORMAL)
-#    cv2.setWindowProperty(noname, cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
-    cv2.setMouseCallback(noname,isnt_wildebeest)
-    cv2.imshow(noname,countframe)
-    while(1):
-        k = cv2.waitKey(0)
-        if k==27:    # Esc key to stop
-            endClass = True
-            break
-        elif k==ord('c'):
-            break
-    cv2.destroyAllWindows()
-    if endClass: break
+    if yeses:
+        yesname = imgName + ': dbl click wildebeest (ESC to quit, c to continue)'
+        cv2.namedWindow(yesname, flags =  cv2.WINDOW_NORMAL)
+        #    cv2.setWindowProperty(yesname, cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
+        cv2.resizeWindow(yesname, 4*Nx,4*Ny);
+        cv2.setMouseCallback(yesname,is_wildebeest)
+        cv2.imshow(yesname,countframe)
+        while(1):
+            k = cv2.waitKey(0)
+            if k==27:    # Esc key to stop
+                endClass = True
+                break
+            elif k==ord('c'):
+                break
+        cv2.destroyAllWindows()
+        if endClass: break
+    if nos:
+        #    cv2.setWindowProperty(noname, cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
+        cv2.setMouseCallback(noname,isnt_wildebeest)
+        cv2.imshow(noname,countframe)
+        while(1):
+            k = cv2.waitKey(0)
+            if k==27:    # Esc key to stop
+                endClass = True
+                break
+            elif k==ord('c'):
+                break
+        if endClass: break
                 
 
 

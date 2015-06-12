@@ -13,14 +13,17 @@ sys.path.append('../extractor/')
 
 from circularHOGExtractor import circularHOGExtractor
 
-ch = circularHOGExtractor(8,2,4) 
+ch = circularHOGExtractor(4,4,3) 
 
 cls0 = './no/'
 cls0c = './no_contrast/'
 cls1 = './yes/'
-lst0 = [name for name in os.listdir(cls0)] 
-lst0c = [name for name in os.listdir(cls0c)]
-lst1 = [name for name in os.listdir(cls1)]# if os.path.isfile(name)]
+#lst0 = [name for name in os.listdir(cls0)] 
+#lst0c = [name for name in os.listdir(cls0c)]
+#lst1 = [name for name in os.listdir(cls1)]# if os.path.isfile(name)]
+lst0 = [name for name in os.listdir(cls0) if not name.startswith('.')] 
+lst0c = [name for name in os.listdir(cls0c) if not name.startswith('.')]
+lst1 = [name for name in os.listdir(cls1) if not name.startswith('.')]
 
 nFeats = ch.getNumFields() 
 trainData = np.zeros((len(lst0)+len(lst0c)+len(lst1),nFeats))
@@ -44,7 +47,7 @@ for imName in lst1:
     trainData[i,:] = ch.extract(thisIm)
     i = i + 1
 
-gnb = AdaBoostClassifier(DecisionTreeClassifier(max_depth=1),algorithm="SAMME",n_estimators=250)
+gnb = AdaBoostClassifier(DecisionTreeClassifier(max_depth=1),algorithm="SAMME",n_estimators=50)
 
 
 y_pred = gnb.fit(trainData,targetData)

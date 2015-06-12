@@ -11,8 +11,8 @@ from sklearn.datasets import make_gaussian_quantiles
 
 cls0 = './no/'
 cls1 = './yes/'
-lst0 = [name for name in os.listdir(cls0)]# if os.path.isfile(name)]
-lst1 = [name for name in os.listdir(cls1)]# if os.path.isfile(name)]
+lst0 = [name for name in os.listdir(cls0) if not name.startswith('.')] 
+lst1 = [name for name in os.listdir(cls1) if not name.startswith('.')]
 
 nFeats = 1
 trainData = np.zeros((len(lst0)+len(lst1),nFeats))
