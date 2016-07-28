@@ -4,12 +4,10 @@ import numpy as np
 
 class circularHOGExtractor():
     """
-    Create a 1D edge length histogram and 1D edge angle histogram.
-    
-    This method takes in an image, applies an edge detector, and calculates
-    the length and direction of lines in the image.
-    
-    bins = the number of bins
+    This method takes in a single image and extracts rotation invariant HOG features
+    following the approach in this paper: 
+    Liu, Kun, et al. "Rotation-invariant HOG descriptors using fourier analysis in polar and spherical coordinates."
+    International Journal of Computer Vision 106.3 (2014): 342-364.
     """
     def __init__(self, bins=4, size=6, max_freq=4):
 
@@ -22,7 +20,6 @@ class circularHOGExtractor():
 
         mf = self.mNMaxFreq+1
         self.mNCount = 2*(bins-1) * (mf + 2*(np.dot([mf - i for i in range(mf)] , range(mf))  ))
-        print self.mNCount
         # create a list to store kernels for regional descriptors based on circular harmonics
         self.ciKernel = []
 
@@ -73,7 +70,7 @@ class circularHOGExtractor():
         # compute magnitude/phase of complex numbers
         phi = np.angle(dz)
         r = np.abs(dz)
- #       r = r/(r.mean()+0.001)
+#       r = r/(r.std()+0.0001)
 
 
         # create an empty array for storing the dfft of the orientation vector
@@ -193,9 +190,7 @@ class circularHOGExtractor():
                                 features[p,f_index]=(val*val1.conjugate()).imag
                                 f_index+=1
 
-        for ppp in range(self.mNCount):
         
-            print ppp, features[2193,ppp]
         return features
 
 #        print "diff to original array:"

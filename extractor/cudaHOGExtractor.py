@@ -8,17 +8,18 @@ import scikits.cuda.misc as cumisc
 culinalg.init()
 import cmath as cm
 import numpy as np
+import cv2
 
 from pycuda.compiler import SourceModule
 
 class cudaHOGExtractor():
     """
-    Create a 1D edge length histogram and 1D edge angle histogram.
-    
-    This method takes in an image, applies an edge detector, and calculates
-    the length and direction of lines in the image.
-    
-    bins = the number of bins
+    This method takes in an image and extracts rotation invariant HOG features
+    following the approach in this paper: 
+    Liu, Kun, et al. "Rotation-invariant HOG descriptors using fourier analysis in polar and spherical coordinates."
+    International Journal of Computer Vision 106.3 (2014): 342-364.
+    HOG features are extracted with every pixel considered as the potential centre of an object,
+    and extraction performed in parallel on a GPU
     """
     def __init__(self, bins=4, size=6, max_freq=4):
 
@@ -75,6 +76,7 @@ class cudaHOGExtractor():
         # compute magnitude/phase of complex numbers
         phi = np.angle(dz)
         r = np.abs(dz)
+        r = r/(r.std()+0.001)
  #       r = r/(r.mean()+0.001)
 
 
@@ -136,13 +138,20 @@ class cudaHOGExtractor():
 
         # compute gradient with a central difference method and store in complex form
         (dy, dx) = np.gradient(I)
-        dz = dx + 1j*dy
-        dz = dz.astype(np.complex64)
-        dz_gpu = gpuarray.to_gpu(dz)
 
+        dz = dx + 1j*dy
+#       ddd = np.abs(dz[500-16:500+16,100-16:100+16])
         # compute magnitude/phase of complex numbers
         phi = np.angle(dz)
         r = np.abs(dz)
+        box = 32
+#       tmp1 = cv2.blur(r,(box,box))
+#        tmp2 = cv2.blur(np.multiply(r,r),(box,box))
+#        stddev = np.sqrt(tmp2 - np.multiply(tmp1,tmp1)) + 0.0001
+
+#       dz = np.divide(dx,stddev) + np.divide(dy,stddev)*1j
+        dz = dz.astype(np.complex64)
+        dz_gpu = gpuarray.to_gpu(dz)
 	
 
         histF =np.zeros((self.mNMaxFreq + 1, nx, ny),dtype=np.complex64)
